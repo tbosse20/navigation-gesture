@@ -10,9 +10,8 @@ import numpy as np
 # Suppress YOLOv8 logging
 logging.getLogger("ultralytics").setLevel(logging.ERROR)
 
-def extract_person_from_videos(videos_folder_path: str, output_folder: str):
-    """
-    Extracts people from video folder and saves them with bounding boxes and tracking IDs in a CSV file.
+def extract_person_from_videos(videos_folder_path: str, output_folder: str, concat: bool = True):
+    """ Extracts people from video folder and saves them with bounding boxes and tracking IDs in a CSV file.
     
     Args:
         videos_folder (str): Path to the folder containing video files.
@@ -34,15 +33,18 @@ def extract_person_from_videos(videos_folder_path: str, output_folder: str):
     if not os.path.exists(output_folder): os.makedirs(output_folder)
     # Make csv file for the video
     videos_folder_name = os.path.basename(os.path.normpath(videos_folder_path))
-    csv_file = videos_folder_name + "_bboxes.csv"
+    csv_file = videos_folder_name + "_bboxes_unclean.csv"
     csv_path = os.path.join(output_folder, csv_file)
-    if os.path.exists(csv_path): os.remove(csv_path)
-    with open(csv_path, 'w') as f: f.write("video_name,frame_id,pedestrian_id,x1,y1,x2,y2\n")
+    
+    # Check if the CSV file already exists
+    if not os.path.exists(csv_path) and concat:
+        with open(csv_path, 'w') as f:
+            f.write("video_name,frame_id,pedestrian_id,x1,y1,x2,y2\n")
     
     # Process each video file
     for video_file in tqdm(video_files, desc="Videos"):
         video_path = os.path.join(videos_folder_path, video_file)
-        pose_from_video(video_path, csv_path)
+        pose_from_video(video_path, csv_path, concat=concat)
 
 def add_tqdm(element, video_path):
 
@@ -59,7 +61,8 @@ def add_tqdm(element, video_path):
     
     return element
 
-def pose_from_video(video_path: str, csv_path: str):
+def pose_from_video(video_path: str, csv_path: str, concat: bool = True):
+    """ Extracts people from video and saves them with bounding boxes and tracking IDs in a CSV file. """
     
     # Check if the video file exists and is a valid format
     if not os.path.exists(video_path):
@@ -72,6 +75,18 @@ def pose_from_video(video_path: str, csv_path: str):
         print(f"Error: Video file {video_path} is not a valid video format.")
         return
     
+    # Create individual CSV file for each video if it doesn't exist
+    if not os.path.exists(csv_path) and not concat:
+        # Update the CSV file name to include the video name
+        video_name = os.path.basename(video_path)
+        csv_file = csv_file.replace('.csv', f'_{video_name}.csv')
+        with open(csv_path, 'w') as f:
+            f.write("video_name,frame_id,pedestrian_id,x1,y1,x2,y2\n")
+    
+    # Get existing lines from the CSV file to test for duplicates
+    with open(csv_path, 'r') as f:
+        lines = f.readlines()
+        
     # Load YOLO model
     yolo = YOLO("weights/yolov8s.pt")
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -86,28 +101,34 @@ def pose_from_video(video_path: str, csv_path: str):
         iou=0.6,
     )
 
+    # Process each frame and extract people
     results = add_tqdm(results, video_path)
-    for frame_number, result in enumerate(results):
+    for frame_id, result in enumerate(results):
         if result.boxes is None:
             continue
         
+        # Get video file name and dimensions
+        video_name = os.path.basename(result.path)
+        width, height = result.orig_shape[1], result.orig_shape[0]
+        
+        # Skip if already in file
+        if any(f"{video_name},{frame_id}" in line for line in lines):
+            continue
+            
         # Exclude non-person detections
         person_boxes = result.boxes[result.boxes.cls == 0]
         if len(person_boxes) == 0:
             continue
         
-        # Get video file name and dimensions
-        video_file = os.path.basename(result.path)
-        width, height = result.orig_shape[1], result.orig_shape[0]
-
+        # Process each detected person
         for box in person_boxes:
             x1, y1, x2, y2 = box.xyxy[0].cpu().numpy()
             x1_norm, y1_norm, x2_norm, y2_norm = np.array([x1, y1, x2, y2]) / np.array([width, height, width, height])
-            track_id = int(box.id[0]) if box.id is not None else -1
-
+            pedestrian_id = int(box.id[0]) if box.id is not None else -1
+            
             # Append result to CSV
             with open(csv_path, 'a') as f:
-                f.write(f"{video_file},{frame_number},{track_id},{x1_norm},{y1_norm},{x2_norm},{y2_norm}\n")
+                f.write(f"{video_name},{frame_id},{pedestrian_id},{x1_norm},{y1_norm},{x2_norm},{y2_norm}\n")
                 
 if __name__ == "__main__":
     
@@ -115,7 +136,8 @@ if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser(description="Extract people from videos and save to CSV.")
     parser.add_argument("--videos_folder",  type=str, help="Path to the folder containing video files.", required=True)
-    parser.add_argument("--output_folder",  type=str, help="Path to the output folder for CSV files.", default="data/labels")
+    parser.add_argument("--output_folder",  type=str, help="Path to the output folder for CSV files.", default="data/labels/unclean")
+    parser.add_argument("--concat", action="store_true", help="Concatenate CSV files.", default=True)
     args = parser.parse_args()
     
-    extract_person_from_videos(args.videos_folder, args.output_folder)
+    extract_person_from_videos(args.videos_folder, args.output_folder, args.concat)
