@@ -1,18 +1,18 @@
 import os
 import pandas as pd
 
-def stretch_sequence(sequential_csv: str, bbox_csv: str):
+def stretch_sequence(sequence_csv: str, bbox_csv: str):
     """ Stretch sequences from frame-stamp to individual frames. Merge with bounding boxes. """
     
     # Check if the CSV file and video folder exist
-    for csv_file in [sequential_csv, bbox_csv]:
+    for csv_file in [sequence_csv, bbox_csv]:
         if not os.path.exists(csv_file):
             raise FileNotFoundError(f"CSV file {csv_file} does not exist.")
         if not os.path.isfile(csv_file):
             raise NotADirectoryError(f"CSV file {csv_file} is not a file.")
     
     # Load the CSV file
-    seq_df = pd.read_csv(sequential_csv, index_col=False) if os.path.exists(sequential_csv) else None
+    seq_df = pd.read_csv(sequence_csv, index_col=False) if os.path.exists(sequence_csv) else None
     bbox_df = pd.read_csv(bbox_csv, index_col=False) if os.path.exists(bbox_csv) else None
     if seq_df.empty or bbox_df.empty:
         print("Error: One or both CSV files are empty.")
@@ -45,12 +45,12 @@ def stretch_sequence(sequential_csv: str, bbox_csv: str):
     merged_df = merged_df.sort_values(by=["video_name", "gesture_label_id", "frame_id", "pedestrian_id"])
     
     # Save result
-    output_csv = sequential_csv.replace("sequential.csv", "stretched.csv")
+    output_csv = sequence_csv.replace("sequence.csv", "stretched.csv")
     merged_df.to_csv(output_csv, index=False)
     print(f"Saved stretched annotations to: {output_csv}")
 
 if __name__ == "__main__":
     # Example usage
-    sequence_csv = "data/labels/actedgestures_sequential.csv"
+    sequence_csv = "data/labels/actedgestures_sequence.csv"
     bbox_csv = "data/labels/actedgestures_bbox.csv"
     stretch_sequence(sequence_csv, bbox_csv)

@@ -40,14 +40,14 @@ def save_csv_retrieval(video_path, csv_type: str):
 def retrieve_data(video_path):
     
     # Get the updated CSV file path
-    df_bboxes = save_csv_retrieval(video_path, 'bboxes')
-    df_labels = save_csv_retrieval(video_path, 'sequential')
+    df_bbox = save_csv_retrieval(video_path, 'bbox')
+    df_sequence = save_csv_retrieval(video_path, 'sequence')
 
     # Check if the DataFrame is empty
-    if df_bboxes.empty and df_labels.empty:
+    if df_bbox.empty and df_sequence.empty:
         raise ValueError(f"CSV file for {video_path} is empty.")
     
-    return df_bboxes, df_labels
+    return df_bbox, df_sequence
 
 def get_df_pedestrian(df_video, frame_id, pedestrian_id):
     """ Get the pedestrian ID from the DataFrame. """
@@ -98,22 +98,22 @@ def draw_bbox(frame, x1, y1, x2, y2, pedestrian_id):
     
     return frame
 
-def get_pedestrian_label_sequence(df_video_labels, frame_id, pedestrian_id):
+def get_pedestrian_label_sequence(df_sequence, frame_id, pedestrian_id):
     """ Get the pedestrian label sequence from the DataFrame. """
     
     # Filter the DataFrame for the current pedestrian ID
-    if df_video_labels is None:
+    if df_sequence is None:
         return None
     
     # Filter for the current pedestrian and frame
-    df_video_labels = df_video_labels[
-        (df_video_labels["pedestrian_id"] == pedestrian_id) &
-        (df_video_labels["start_frame"] <= frame_id) &
-        (df_video_labels["end_frame"] >= frame_id)
+    df_sequence = df_sequence[
+        (df_sequence["pedestrian_id"] == pedestrian_id) &
+        (df_sequence["start_frame"] <= frame_id) &
+        (df_sequence["end_frame"] >= frame_id)
     ]
     
     # Get the first relevant label row
-    pedestrian_sequence = df_video_labels.iloc[0] if not df_video_labels.empty else None
+    pedestrian_sequence = df_sequence.iloc[0] if not df_sequence.empty else None
     return pedestrian_sequence
 
 def draw_gesture_labels(frame, x1, y1, pedestrian_sequence):
@@ -178,17 +178,17 @@ def draw_bbox_duplicate_alert(frame, pedestrian_ids):
         cv2.FONT_HERSHEY_DUPLEX, 1, RED_COLOR, 2, cv2.LINE_AA
     )
 
-def draw_pedestrians(frame, df_bboxes, frame_id, df_labels):
+def draw_pedestrians(frame, df_bbox, frame_id, df_sequence):
     """ Draw pedestrians and their bounding boxes on the frame. """
     
     # Get the pedestrian IDs for the current frame
-    pedestrian_ids = df_bboxes[df_bboxes["frame_id"] == frame_id]["pedestrian_id"]
+    pedestrian_ids = df_bbox[df_bbox["frame_id"] == frame_id]["pedestrian_id"]
     if len(pedestrian_ids) == 0: return frame
     
     for i, pedestrian_id in enumerate(pedestrian_ids):
         
         # Get the pedestrian DataFrame for the current ID
-        pedestrian = get_df_pedestrian(df_bboxes, frame_id, pedestrian_id)
+        pedestrian = get_df_pedestrian(df_bbox, frame_id, pedestrian_id)
         if pedestrian is None: continue
         
         # Draw alert for duplicate IDs
@@ -199,7 +199,7 @@ def draw_pedestrians(frame, df_bboxes, frame_id, df_labels):
         draw_bbox(frame, x1, y1, x2, y2, pedestrian_id)
         
         # Get and draw gesture labels 
-        pedestrian_sequence = get_pedestrian_label_sequence(df_labels, frame_id, pedestrian_id)
+        pedestrian_sequence = get_pedestrian_label_sequence(df_sequence, frame_id, pedestrian_id)
         draw_gesture_labels(frame, x1, y1, pedestrian_sequence)
     
     return frame
@@ -304,7 +304,7 @@ def visualize_video(video_path):
         raise ValueError(f"Unsupported video format: {video_path}. Supported formats are .mp4, .avi, .mov.")
     
     # Retrieve the bounding boxes and labels from the CSV files
-    df_bboxes, df_labels = retrieve_data(video_path)
+    df_bbox, df_sequence = retrieve_data(video_path)
     
     # Load the video
     cap = cv2.VideoCapture(video_path)
@@ -324,7 +324,7 @@ def visualize_video(video_path):
         
         # Draw bounding boxes on the frame
         if controller.show_hud:
-            frame = draw_pedestrians(frame, df_bboxes, controller.frame_id, df_labels)
+            frame = draw_pedestrians(frame, df_bbox, controller.frame_id, df_sequence)
             frame = draw_info(frame, video_name, controller.frame_id, controller.interval)
         
         # Display the frame
