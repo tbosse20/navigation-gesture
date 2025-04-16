@@ -1,0 +1,12 @@
+Todo:
+- Finalize frame retrieval and cutting defs <-
+- Retrieve frames and cut all cameras for Bike-data
+- Clean up descriptions
+
+- Add camera name to videos?
+- Add camera names to csv file 
+
+- Stream analyze castle videos
+- Merge and cut castle videos
+- Prep Castle data
+- Move README subsection

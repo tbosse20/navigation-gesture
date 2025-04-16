@@ -52,6 +52,11 @@ def extract_person_from_videos(videos_folder_path: str, output_folder: str, conc
     
     Args:
         videos_folder (str): Path to the folder containing video files.
+        output_folder (str): Path to the output folder for CSV files.
+        concat (bool):       Whether to concatenate CSV files or not.
+        
+    Returns:
+        None: A new CSV file is created in the output folder.
     """
     
     # Check if the video folder exists and is a directory
@@ -175,11 +180,19 @@ if __name__ == "__main__":
     # Add args
     import argparse
     parser = argparse.ArgumentParser(description="Extract people from videos and save to CSV.")
-    parser.add_argument("--videos_folder",  type=str,           help="Path to the folder containing video files.",  required=True)
-    parser.add_argument("--output_folder",  type=str,           help="Path to the output folder for CSV files.",    default="data/labels/")
-    parser.add_argument("--concat",     action="store_true",    help="Concatenate CSV files.",  dest="concat")
-    parser.add_argument("--indi", action="store_false",   help="Invidivual CSV files.",   dest="concat")
+    parser.add_argument("--videos_folder",  type=str,               help="Path to the folder containing video files.",  required=True)
+    parser.add_argument("--output_folder",  type=str,               help="Path to the output folder for CSV files.",    default="data/labels/")
+    parser.add_argument("--concat",         action="store_true",    help="Concatenate CSV files.",  dest="concat")
     parser.set_defaults(concat=True)
     args = parser.parse_args()
     
+    # Example usage
+    """
+    python extract_person_video.py \
+        --videos_folder  = "../data/actedgestures_original" \
+        --output_folder  = "../data/labels/" \
+        --concat         = True
+    """
+
+    # Extract people from videos and save to CSV
     extract_person_from_videos(args.videos_folder, args.output_folder, args.concat)
