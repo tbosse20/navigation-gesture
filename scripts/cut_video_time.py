@@ -3,8 +3,10 @@
 import subprocess
 import os
 import sys
+
 sys.path.append(".")
 from src.cut_video_time import cut_video_time
+
 
 def get_fps(video_file: str) -> float:
     """Get the frames per second (fps) of a video file using ffprobe.
@@ -36,7 +38,11 @@ def get_fps(video_file: str) -> float:
 
 
 def cut_video_time(
-    input_file: str, start_time: int, end_time: int = None, duration: int = None
+    input_file: str,
+    start_time: int,
+    end_time: int = None,
+    duration: int = None,
+    output_file: str = None,
 ) -> None:
     """Cut a video file using ffmpeg with start time and end time or duration.
 
@@ -45,6 +51,8 @@ def cut_video_time(
         start_time  (int): Start time in seconds.
         end_time    (int): End time in seconds.
         duration    (int): Duration in seconds.
+        output_file (str): Path to the output video file.
+        If None, it will be created in a sibling folder of the input file.
 
     Returns:
         None: A new video file is created in a sibling folder of the input file.
@@ -68,9 +76,10 @@ def cut_video_time(
         raise ValueError("Only one of 'end_time' or 'duration' can be provided.")
 
     # Make output folder as sibling of input files parent folder
-    output_folder = os.path.dirname(input_file) + "_cut"
-    output_file = os.path.join(output_folder, os.path.basename(input_file))
-    os.makedirs(os.path.dirname(output_file), exist_ok=True)
+    if output_file is None:
+        output_folder = os.path.dirname(input_file) + "_cut"
+        output_file = os.path.join(output_folder, os.path.basename(input_file))
+        os.makedirs(os.path.dirname(output_file), exist_ok=True)
 
     # Check if output file already exists
     if os.path.exists(output_file):
@@ -79,11 +88,28 @@ def cut_video_time(
     # Calculate duration if end_time is provided
     duration = end_time - start_time if end_time else duration
 
-    cut_video_time(
-        input_file=input_file,
-        output_file=output_file,
-        start_time=start_time,
-        duration=duration,
+    # Normalize paths
+    input_file = os.path.normpath(input_file)
+    output_file = os.path.normpath(output_file)
+
+    # Run ffmpeg command
+    command = [
+        "ffmpeg",
+        "-ss",
+        str(start_time),  # Accurate when placed before -i with re-encode
+        "-i",
+        input_file,
+        "-t",
+        str(duration),
+        "-an",  # Remove audio
+        "-c:v",
+        "libx264",  # Re-encode video
+        "-preset",
+        "fast",  # Speed vs compression tradeoff
+        output_file,
+    ]
+    subprocess.run(
+        command, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
     )
 
     # Print output file path

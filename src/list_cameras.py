@@ -1,6 +1,6 @@
 import os, sys
 sys.path.append(".")
-from scripts.concat_videos import get_camera_types
+from scripts.concat_videos_cluster import get_camera_types
 
 def list_equal_camera_videos(input_dir:str, video_list: str) -> list:
     """ Make lists of videos with the same camera angle. """

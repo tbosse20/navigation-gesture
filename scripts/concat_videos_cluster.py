@@ -105,7 +105,16 @@ def concat_dir_videos(
 
 
 def concat_subdir(input_dir: list, output_dir: str, manual_include_word: str) -> None:
-    """Concatenate videos from the same dir, with the given 'search word'."""
+    """Concatenate videos from the same dir. Clusters given 'manual_include_word' or found itself. 
+    
+    Args:
+        input_dir (list):    The list of input dirs containing videos.
+        output_dir (str):    The output dir to save the concatenated videos.
+        manual_include_word (str): Only include video files containing this word.
+        
+    Returns:
+        None: Saves the concatenated videos to the output dir.
+    """
 
     # Loop through sub dirs
     for input_dir in tqdm(input_dir, desc="Processing sub dirs"):
@@ -127,25 +136,34 @@ def concat_subdir(input_dir: list, output_dir: str, manual_include_word: str) ->
             # Create output dir if multiple camera types are found and update the output name
             if manual_include_word is None:
                 os.makedirs(output_name, exist_ok=True)
-                output_name = os.path.join(output_name, include_word)
+                current_output_file = os.path.join(output_name, include_word)
 
             # Create output file name
-            output_file = output_name + ".mp4"
+            current_output_file = current_output_file + ".mp4"
             # Skip if the output file already exists
-            if os.path.exists(output_file):
+            if os.path.exists(current_output_file):
                 print(f"'{input_name}' already exists, skipping.")
                 continue
 
             # Concatenate videos in the sub dir
             concat_videos(
                 input_dir=input_dir,
-                output_file=output_file,
+                output_file=current_output_file,
                 include_word=include_word,
             )
 
 
 def concat_videos(input_dir: str, output_file: str, include_word: str) -> None:
-    """Concatenate videos from the same dir, with the given 'search word'."""
+    """Concatenate videos from the same dir, with the given 'search word'.
+    
+    Args:
+        input_dir (str):     The dir containing the videos.
+        output_file (str):   The output file name.
+        include_word (str):  Only include video files containing this word.
+        
+    Returns:
+        None: Saves the concatenated video to the output file.
+    """
 
     # Get video files containing 'search word', reverse order
     video_list = [
@@ -200,22 +218,15 @@ if __name__ == "__main__":
         default=None,
         help="Only include video files containing this word.",
     )
-    parser.add_argument(
-        "--extension_name",
-        type=str,
-        default="concat",
-        help="The name of the output dir.",
-    )
     args = parser.parse_args()
     
     # Example usage:
     """ 
-    python concat_videos.py \
-        --input_dir ../data/actedgestures_original \
+    python scripts/concat_videos_cluster.py \
+        --input_dir ../data/actedgestures_original
     """
 
     concat_dir_videos(
         parent_dir=args.input_dir,
         manual_include_word=args.include_word,
-        extension_name=args.extension_name,
     )
