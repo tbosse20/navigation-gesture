@@ -2,10 +2,6 @@
 
 import subprocess
 import os
-import sys
-
-sys.path.append(".")
-from src.cut_video_time import cut_video_time
 
 
 def get_fps(video_file: str) -> float:
@@ -112,15 +108,16 @@ def cut_video_time(
         command, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
     )
 
-    # Print output file path
-    fps = get_fps(input_file)
-    if end_time is not None:
-        print(f"Duration: {duration} seconds")
-        print(f"Frames: {int(duration * fps)} frames")  # Assuming 30 fps
-    else:
-        print(f"End time: {end_time} seconds")
-        print(f"End frame: {int(end_time * fps)} frames")  # Assuming 30 fps
-
+    # # Print output file path
+    # fps = get_fps(input_file)
+    # if end_time is not None:
+    #     print(f"Duration: {duration} seconds")
+    #     print(f"Frames: {int(duration * fps)} frames")  # Assuming 30 fps
+    # else:
+    #     print(f"End time: {end_time} seconds")
+    #     print(f"End frame: {int(end_time * fps)} frames")  # Assuming 30 fps
+    
+    return duration
 
 if __name__ == "__main__":
 
