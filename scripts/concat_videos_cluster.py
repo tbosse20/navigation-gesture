@@ -51,7 +51,7 @@ def concat_dir_videos(
         include_word  (str):  Only include video files containing this word.
         extension_name (str): The name of the output dir.
 
-    Structure:
+    Input Structure:
         parent_dir/
         ├── subdir1/
         │   ├── video1-left.mp4
@@ -89,7 +89,7 @@ def concat_dir_videos(
         raise NotADirectoryError(f"'{parent_dir}' is not a directory.")
 
     # Create output dir as sibling of parent dir
-    output_dir = f"{parent_dir}_{extension_name}"
+    output_dir = os.path.join(f"{parent_dir}_{extension_name}", "videos")
     os.makedirs(output_dir, exist_ok=True)
 
     # Get sub dirs
@@ -170,10 +170,13 @@ def concat_videos(input_dir: str, output_file: str, include_word: str) -> None:
         os.path.join(input_dir, f.name)
         for f in os.scandir(input_dir)
         if f.is_file() and include_word in f.name
-    ][::-1]
+    ]
     if len(video_list) == 0:
         return
-
+    
+    # Sort according to video name ex. '2025-03-18_14-27-29-front.mp4'
+    video_list.sort(key=lambda x: x.split("/")[-1].split("-")[0])
+    
     # Write video paths to the file list
     list_file = write_txt_file(video_list)
 
@@ -192,13 +195,26 @@ def concat_videos(input_dir: str, output_file: str, include_word: str) -> None:
     ]
 
     # Run ffmpeg command
-    subprocess.run(
-        command, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
-    )
+    try:
+        subprocess.run(
+            command, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
+        )
+    except subprocess.CalledProcessError as e:
+        print(f"Error: {e}")
+        print(f"Command: {' '.join(command)}")
+        print(f"Output file: {output_file}")
+        print(f"List file: {list_file}")
+        raise e
+    except Exception as e:
+        print(f"Unexpected error: {e}")
+        print(f"Command: {' '.join(command)}")
+        print(f"Output file: {output_file}")
+        print(f"List file: {list_file}")
+        raise e
 
     # Remove the file list
     os.remove(list_file)
-
+    
 
 if __name__ == "__main__":
     import argparse

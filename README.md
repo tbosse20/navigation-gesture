@@ -2,6 +2,10 @@
 
 ## Guide
 Undergrads
+- Annotation list: https://docs.google.com/spreadsheets/d/1-A-I4g3u3lEO5P0YNTHxZ3N3Yy2MMYA-xnFlwIAi13k/edit?usp=sharing
+
+CAGE: https://ucmerced.box.com/s/sfg0jnwxbcan409sfswjohdbzju9c64j
+ITGI: https://ucmerced.box.com/s/e4n2pgg8mcdnibprfhc19gpzotgkp69m
 
 ## Edit videos
 - `video_edit` concatenates videos

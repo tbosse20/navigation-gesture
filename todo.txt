@@ -1,5 +1,5 @@
 Todo:
-- Merge and cut castle videos
-- Prep Castle data
+- Get bounding boxes of Castle
+- Add "front" til realworldgestures 
 - README
 - Prep annotation framework for undergrads
