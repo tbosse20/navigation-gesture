@@ -1,5 +1,4 @@
 Todo:
-- Get bounding boxes of Castle
-- Add "front" til realworldgestures 
+- Merge two versions of visulize_bbox
 - README
 - Prep annotation framework for undergrads

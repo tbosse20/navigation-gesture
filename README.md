@@ -1,18 +1,35 @@
 # navigation-gesture
 
-## Guide
-Undergrads
-- Annotation list: https://docs.google.com/spreadsheets/d/1-A-I4g3u3lEO5P0YNTHxZ3N3Yy2MMYA-xnFlwIAi13k/edit?usp=sharing
+## Undergrads Guide
+1. Annotation list: https://docs.google.com/spreadsheets/d/1-A-I4g3u3lEO5P0YNTHxZ3N3Yy2MMYA-xnFlwIAi13k/edit?usp=sharing
 
-CAGE: https://ucmerced.box.com/s/sfg0jnwxbcan409sfswjohdbzju9c64j
-ITGI: https://ucmerced.box.com/s/e4n2pgg8mcdnibprfhc19gpzotgkp69m
+2. Datasets
+    - CAGE: https://ucmerced.box.com/s/sfg0jnwxbcan409sfswjohdbzju9c64j
+    - ITGI: https://ucmerced.box.com/s/e4n2pgg8mcdnibprfhc19gpzotgkp69m
+
+3. Clean up bounding boxes `bbox.csv` from `raw` to `clean`. Use `visualize_bbox.py`
+4. Annotate sequence. One CSV file per video. Use `visualize_bbox.py`
+
+```
+project/
+├── videos/
+├── info.csv
+├── raw/
+│   ├── bbox/
+│   │   └── `video_name, camera, frame_id, pedestrian_id, x1, y1, x2, y2`
+│   └── sequence/
+│       └── `video_name, camera, pedestrian_id, start_frame, end_frame, gesture_label_id, ego_driver_mask`
+└── clean/
+    ├── bbox/
+    └── sequence/
+```
 
 ## Edit videos
-- `video_edit` concatenates videos
+- `concat_videos` concatenates videos
     1. With given 'search word' *(eg. "front")*
     2. Automatic finds all 'search words'
     3. Specific videos
-- `video_edit` cuts videos to new files
+- `cut_video` cuts videos to new files
 
 ## Annotation
 1. Extract pedestrian bboxes with `scripts/extract_person_video.py`.
