@@ -1,4 +1,3 @@
 Todo:
-- Merge two versions of visulize_bbox
 - README
-- Prep annotation framework for undergrads
+- Launch

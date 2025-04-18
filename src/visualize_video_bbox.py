@@ -1,41 +1,124 @@
 # %%
-import numpy as np
 import cv2
 import pandas as pd
 import os
 import sys
-import random
 
 sys.path.append(".")
 from config.gesture_classes import Gesture
 
 
-def save_csv_retrieval(main_folder_path: str, video_name: str, csv_type: str):
-    """Get the updated CSV file path based on the video folder name."""
+def split_clip_name(video_name: str) -> tuple:
+    """Split the video name into clip and camera names."""
 
-    for version in ["clean", "raw"]:
-        labels_folder_path = os.path.join(main_folder_path, "labels", version, csv_type)
-        csv_file = f"{video_name}_front.csv"
-        csv_path = os.path.join(labels_folder_path, csv_file)
-        if os.path.exists(csv_path):
-            df = pd.read_csv(csv_path, index_col=False)
-            return df
+    # Split the video name by "/"
+    clip_split = video_name.split("/")
+    # Get the clip name and camera name
+    clip_name = clip_split[0] if len(clip_split) > 0 else None
+    camera_name = clip_split[1] if len(clip_split) > 1 else None
+
+    return clip_name, camera_name
+
+
+def get_video_path(
+    main_folder_path: str, video_name: str, videos_folder_name: str = "videos"
+) -> None:
+    """Make video path and check if the video folder and CSV file exist."""
+
+    # Check if the video folder and CSV file exist
+    if not os.path.exists(main_folder_path):
+        raise FileNotFoundError(f"Video folder {main_folder_path} does not exist.")
+    if not os.path.isdir(main_folder_path):
+        raise NotADirectoryError(f"Video folder {main_folder_path} is not a directory.")
+
+    # Construct the video path from the main folder path and video name
+    clip_split = video_name.split("/")
+    video_path = (
+        os.path.join(
+            *[
+                p
+                for p in [main_folder_path, videos_folder_name] + clip_split
+                if p is not None
+            ]
+        )
+        + ".mp4"
+    )
+    video_path = os.path.normpath(video_path)
+
+    # Ensure the video is valid
+    if not os.path.exists(video_path):
+        raise FileNotFoundError(f"Video folder {video_path} does not exist.")
+    if not os.path.isfile(video_path):
+        raise FileNotFoundError(f"Video file {video_path} does not exist.")
+    if not video_path.endswith((".mp4", ".avi", ".mov", ".MP4")):
+        raise ValueError(
+            f"Unsupported video format: {video_path}. Supported formats are .mp4, .avi, .mov."
+        )
+
+    return video_path
+
+
+def look_for_csv(
+    main_folder_path: str,
+    video_name: str,
+    csv_type: str,
+    labels_folder_name: str = "labels",
+) -> pd.DataFrame:
+    """Look for the CSV file in the labels folder."""
+
+    split_clip = video_name.split("/")
+
+    # Look for the CSV file in the 'labels' sub folders
+    for version in [None, "clean", "raw"]:
+
+        # Construct the CSV file
+        csv_file = "_".join([p for p in split_clip if p is not None]) + ".csv"
+
+        # Construct the CSV path
+        csv_path = os.path.join(
+            *[
+                p
+                for p in [
+                    main_folder_path,
+                    labels_folder_name,
+                    version,
+                    csv_type,
+                    csv_file,
+                ]
+                if p is not None
+            ]
+        )
+        if not os.path.exists(csv_path):
+            continue
+
+        # Read the CSV file into a DataFrame
+        df = pd.read_csv(csv_path, index_col=False)
+
+        # Filter the DataFrame in hierarchical order
+        csv_keys = ["video_name", "camera"]
+        for col, key in reversed(list(zip(csv_keys, split_clip))):
+            if col not in df.columns:
+                continue
+            df = df[df[col] == key.lower()]
+            break
+
+        return df
 
     return None
 
 
-def retrieve_data(video_path, clip_name=None):
+def safe_data_retrieve(video_path, video_name=None):
     """Retrieve the bounding boxes and labels from the CSV files."""
 
     # Get the updated CSV file path
-    df_bbox = save_csv_retrieval(video_path, clip_name, "bbox")
-    df_sequence = save_csv_retrieval(video_path, clip_name, "sequence")
+    df_bbox = look_for_csv(video_path, video_name, "bbox")
+    df_sequence = look_for_csv(video_path, video_name, "sequence")
 
     # Check if the DataFrame is empty
     if (df_bbox is None or df_bbox.empty) and (
         df_sequence is None or df_sequence.empty
     ):
-        raise ValueError(f"CSV file for {video_path} is empty.")
+        raise ValueError(f"No CSV files found for {video_name}.")
 
     return df_bbox, df_sequence
 
@@ -222,7 +305,7 @@ def draw_pedestrians(frame, df_bbox, frame_id, df_sequence):
 def draw_info(frame, video_name, frame_id, interval):
     """Draw the video name, frame number, and interval on the frame."""
 
-    info = [f"Video: {video_name}", f"Frame: {frame_id}", f"Interval: {interval}"]
+    info = [f"Video: {video_name.split('_')[1]}", f"Frame: {frame_id}", f"Interval: {interval}"]
     for i, text in enumerate(info):
         cv2.putText(
             frame,
@@ -290,83 +373,14 @@ class Controller:
         self.frame_id = self.total_frames - 1 if self.frame_id < 0 else self.frame_id
 
 
-def main(main_folder_path: str, clip_name: str, camera_name: str) -> None:
-    """Visualize the video with bounding boxes and labels. Works only on clusters.
-
-    Args:
-        video_path (str):  Path to the video file.
-        clip_name (str):   Name of the video clip.
-        camera_name (str): Name of the camera.
-
-    Usage:
-        python merged_visual.py
-            --main_folder "../data/conflict_acted_navigation_gestures" # Path to the main folder containing the videos.
-            --clip_name "video_00" # Name of the video clip.
-            --camera_name "front"  # Name of the camera.
-
-    Control:
-        - Space:        Play/Pause
-        - Up Arrow:     Increase interval
-        - Down Arrow:   Decrease interval
-        - Left Arrow:   Backward frames
-        - Right Arrow:  Forward frames
-        - 'h':          Toggle HUD
-        - 'q':          Quit
-
-    Raises:
-        FileNotFoundError:  If the video file does not exist.
-        ValueError:         If the video format is not supported.
-        ValueError:         If the CSV files are empty.
-
-    Returns:
-        Manual manipulation of CSV files.
-    """
-
-    # Check if the video folder and CSV file exist
-    if not os.path.exists(main_folder_path):
-        raise FileNotFoundError(f"Video folder {main_folder_path} does not exist.")
-    if not os.path.isdir(main_folder_path):
-        raise NotADirectoryError(f"Video folder {main_folder_path} is not a directory.")
-
-    video_path = os.path.join(
-        main_folder_path, "videos", clip_name, camera_name + ".mp4"
-    )
-    # Ensure the video is valid
-    if not os.path.exists(video_path):
-        raise FileNotFoundError(f"Video folder {video_path} does not exist.")
-    if not os.path.isfile(video_path):
-        raise FileNotFoundError(f"Video file {video_path} does not exist.")
-    if not video_path.endswith((".mp4", ".avi", ".mov", ".MP4")):
-        raise ValueError(
-            f"Unsupported video format: {video_path}. Supported formats are .mp4, .avi, .mov."
-        )
-
-    # Get the updated CSV file path
-    # Retrieve the bounding boxes and labels from the CSV files
-    df_bbox, df_sequence = retrieve_data(main_folder_path, clip_name)
-    if df_bbox is None and df_sequence is None:
-        raise FileNotFoundError(f"No CSV file found for.")
-
-    # Get videos by unique video names in the CSV file
-    camera_name = df_bbox["camera"].unique()[0] if df_bbox is not None else []
-    if len(camera_name) == 0:
-        print("Error: No video names found in the CSV file.")
-        return
-
-    df_video_labels = (
-        df_sequence[df_sequence["camera"] == camera_name.lower()]
-        if df_sequence is not None
-        else None
-    )
-
-    _visualize_video(video_path, df_bbox, df_video_labels)
-
-
 def _visualize_video(
-    video_path: str, df_bbox: pd.DataFrame, df_sequence: pd.DataFrame
+    video_path: str,
+    df_bbox: pd.DataFrame,
+    df_sequence: pd.DataFrame,
+    video_name: str = None,
 ) -> None:
-    """ Visualize the video with bounding boxes and labels.
-    
+    """Visualize the video with bounding boxes and labels.
+
     Args:
         video_path (str): Path to the video file.
         df_bbox (pd.DataFrame): DataFrame containing bounding box information.
@@ -376,7 +390,6 @@ def _visualize_video(
     # Load the video
     cap = cv2.VideoCapture(video_path)
     # Get variables from the video
-    video_name = os.path.basename(video_path)
     total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
     # Initialize the controller
     controller = Controller(total_frames)
@@ -408,32 +421,4 @@ def _visualize_video(
 
 
 if __name__ == "__main__":
-
-    # Add args
-    import argparse
-
-    parser = argparse.ArgumentParser(
-        description="Visulize video with bounding boxes and labels."
-    )
-    parser.add_argument(
-        "--main_folder",
-        type=str,
-        help="Path to the main folder containing the videos.",
-        required=True,
-    )
-    parser.add_argument(
-        "--clip_name", type=str, help="Name of  the video clip.", required=True
-    )
-    parser.add_argument(
-        "--camera_name",
-        type=str,
-        help="Name of the camera.",
-    )
-    args = parser.parse_args()
-
-    # Example usage:
-    """ 
-    python merged_visual.py --main_folder "../data/conflict_acted_navigation_gestures" --clip_name "video_00" --camera_name "front"
-    """
-    
-    main(args.main_folder, args.clip_name, args.camera_name)
+    pass
