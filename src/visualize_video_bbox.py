@@ -58,13 +58,23 @@ def get_video_path(
     return video_path
 
 
-def look_for_csv(
+def look_for_csv_path(
     main_folder_path: str,
     video_name: str,
     csv_type: str,
     labels_folder_name: str = "labels",
-) -> pd.DataFrame:
-    """Look for the CSV file in the labels folder."""
+) -> str:
+    """Look for the CSV file in the labels folder.
+
+    Args:
+        main_folder_path (str):     Path to the main folder containing the videos and CSV files.
+        video_name (str):           Name of the video clip and camera name.
+        csv_type (str):             Type of CSV file to look for ('bbox' or 'sequence').
+        labels_folder_name (str):   Name of the labels folder.
+
+    Returns:
+        str: Path to the CSV file.
+    """
 
     split_clip = video_name.split("/")
 
@@ -88,42 +98,96 @@ def look_for_csv(
                 if p is not None
             ]
         )
-        if not os.path.exists(csv_path):
-            continue
+        if os.path.exists(csv_path):
+            return csv_path
 
-        # Read the CSV file into a DataFrame
-        df = pd.read_csv(csv_path, index_col=False)
-
-        # Filter the DataFrame in hierarchical order
-        csv_keys = ["video_name", "camera"]
-        for col, key in reversed(list(zip(csv_keys, split_clip))):
-            if col not in df.columns:
-                continue
-            df = df[df[col] == key.lower()]
-            break
-
-        return df
+    # Last resort: Look for concatenated CSV file
+    csv_path = look_for_concatenated_csv_path(main_folder_path, labels_folder_name)
+    if csv_path is not None:
+        return csv_path
 
     return None
 
 
-def safe_data_retrieve(video_path, video_name=None):
-    """Retrieve the bounding boxes and labels from the CSV files."""
+def look_for_concatenated_csv_path(
+    main_folder_path: str, labels_folder_name: str = "labels"
+) -> str:
+    """Look for the concatenated CSV file in the labels folder."""
+
+    base_main_folder_path = os.path.basename(main_folder_path)
+    csv_file = f"{base_main_folder_path}" + ".csv"
+    csv_path = os.path.join(
+        *[p for p in [main_folder_path, labels_folder_name, csv_file] if p is not None]
+    )
+    if not os.path.exists(csv_path):
+        return None
+
+    return csv_path
+
+
+def load_filter_df(
+    csv_path: str, video_name: list, csv_keys: list = ["video_name", "camera"]
+) -> pd.DataFrame:
+    """Filter the DataFrame for the given video name and camera name.
+
+    Args:
+        csv_path (str):     Path to the CSV file.
+        video_name (str):   Name of the video.
+        camera_name (str):  Name of the camera.
+        csv_keys (list):    List of keys to filter by.
+
+    Returns:
+        pd.DataFrame: Filtered DataFrame.
+    """
+
+    if csv_path is None or not os.path.exists(csv_path):
+        return None
+
+    df = pd.read_csv(csv_path, index_col=False)
+
+    split_clip = video_name.split("/")
+
+    # Filter the DataFrame in hierarchical order
+    for col, key in reversed(list(zip(csv_keys, split_clip))):
+
+        # Continue if the column is not in the DataFrame or key is None
+        if col not in df.columns:
+            continue
+        if key is None:
+            continue
+
+        # Filter first found column
+        df = df[df[col] == key.lower()]
+        break
+
+    return df
+
+
+def get_dfs(main_folder_path: str, video_name: str, csv_file: str = None) -> tuple:
+    """Get the DataFrames for the given video name and camera name."""
 
     # Get the updated CSV file path
-    df_bbox = look_for_csv(video_path, video_name, "bbox")
-    df_sequence = look_for_csv(video_path, video_name, "sequence")
+    if csv_file is None:
+        bbox_csv = look_for_csv_path(main_folder_path, video_name, "bbox")
+        sequence_csv = look_for_csv_path(main_folder_path, video_name, "sequence")
 
-    # Check if the DataFrame is empty
-    if (df_bbox is None or df_bbox.empty) and (
-        df_sequence is None or df_sequence.empty
+    # Filter the DataFrame for the given video name and camera name
+    bbox_df = load_filter_df(bbox_csv, video_name)
+    sequence_df = load_filter_df(sequence_csv, video_name)
+
+    if (bbox_df is None or bbox_df.empty) and (
+        sequence_df is None or sequence_df.empty
     ):
-        raise ValueError(f"No CSV files found for {video_name}.")
+        raise ValueError(
+            f"Error: No CSV files found for the video '{video_name}'. Please check the input folder."
+        )
 
-    return df_bbox, df_sequence
+    return bbox_df, sequence_df
 
 
-def get_df_pedestrian(df_video, frame_id, pedestrian_id):
+def get_df_pedestrian(
+    df_video: pd.DataFrame, frame_id: int, pedestrian_id: int
+) -> pd.DataFrame:
     """Get the pedestrian ID from the DataFrame."""
 
     # Filter the DataFrame for the current pedestrian ID
@@ -131,15 +195,13 @@ def get_df_pedestrian(df_video, frame_id, pedestrian_id):
         (df_video["pedestrian_id"] == pedestrian_id)
         & (df_video["frame_id"] == frame_id)
     ]
-
-    # Check if the DataFrame is empty
     if df_pedestrian.empty:
         return None
 
     return df_pedestrian
 
 
-def get_bbox_from_id(df_pedestrian, frame):
+def get_bbox_from_id(df_pedestrian: pd.DataFrame, frame: int) -> tuple:
     """Get the bounding box coordinates for a given pedestrian ID from normalized coordinates to pixel values."""
 
     # Get the width and height of the frame
@@ -305,7 +367,11 @@ def draw_pedestrians(frame, df_bbox, frame_id, df_sequence):
 def draw_info(frame, video_name, frame_id, interval):
     """Draw the video name, frame number, and interval on the frame."""
 
-    info = [f"Video: {video_name.split('_')[1]}", f"Frame: {frame_id}", f"Interval: {interval}"]
+    info = [
+        f"Video: {video_name.split('_')[1]}",
+        f"Frame: {frame_id}",
+        f"Speed: {int(30/interval)} FPS",
+    ]
     for i, text in enumerate(info):
         cv2.putText(
             frame,
@@ -326,7 +392,7 @@ class Controller:
         # Set default values for the controller
         self.play = False
         self.frame_id = 0
-        self.interval = 1
+        self.speed = 1
         self.show_hud = True
 
         # Set the total number of frames
@@ -336,7 +402,7 @@ class Controller:
         """Control video playback with keyboard input."""
 
         # Get key press
-        key = cv2.waitKeyEx(1) if self.play else cv2.waitKeyEx(0)
+        key = cv2.waitKeyEx(self.speed if self.play else 0)
         # print(f"Key pressed: {key}")
 
         # Control HUD visibility
@@ -356,17 +422,19 @@ class Controller:
     def _interval_control(self, key):
         """Control the interval for frame navigation."""
         # Control playback speed and frame navigation
-        self.interval *= 2 if key == 2490368 else 1  # Up arrow
-        self.interval /= 2 if key == 2621440 else 1  # Down arrow
-        self.interval = int(max(1, self.interval))  # Ensure interval is at least 1
+        self.speed /= 2 if key == 2490368 else 1  # Up arrow
+        self.speed *= 2 if key == 2621440 else 1  # Down arrow
+        self.speed = int(max(1, self.speed))  # Ensure interval is at least 1
 
     def _update_frame_id(self, key):
         """Update the frame ID based on key presses."""
 
+        self.frame_id += 1 if self.play else 0  # Play mode
+        
         # Control frame navigation
-        self.frame_id += self.interval if self.play else 0  # Play mode
-        self.frame_id += self.interval if key == 2555904 else 0  # Right arrow
-        self.frame_id -= self.interval if key == 2424832 else 0  # Left arrow
+        interval = 10
+        self.frame_id += interval if key == 2555904 else 0  # Right arrow
+        self.frame_id -= interval if key == 2424832 else 0  # Left arrow
 
         # Keep frame_id within bounds by wrapping around
         self.frame_id = 0 if self.frame_id >= self.total_frames else self.frame_id
@@ -393,21 +461,28 @@ def _visualize_video(
     total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
     # Initialize the controller
     controller = Controller(total_frames)
+    # Set previous frame ID
+    prev_frame_id = -1
 
     # Create a window to display the video
     while cap.isOpened():
 
         # Check if the video is playing or paused and read the frame
-        cap.set(cv2.CAP_PROP_POS_FRAMES, controller.frame_id)
+        if abs(controller.frame_id - prev_frame_id) > controller.speed:
+            cap.set(cv2.CAP_PROP_POS_FRAMES, controller.frame_id)
+            
         ret, frame = cap.read()
         if not ret:
             break
-
+        
+        controller.frame_id = int(cap.get(cv2.CAP_PROP_POS_FRAMES))
+        prev_frame_id = controller.frame_id
+        
         # Draw bounding boxes on the frame
         if controller.show_hud:
             frame = draw_pedestrians(frame, df_bbox, controller.frame_id, df_sequence)
             frame = draw_info(
-                frame, video_name, controller.frame_id, controller.interval
+                frame, video_name, controller.frame_id, controller.speed
             )
 
         # Display the frame

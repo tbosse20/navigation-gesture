@@ -1,44 +1,73 @@
 # navigation-gesture
 
-## Undergrads Guide
-1. Annotation list: https://docs.google.com/spreadsheets/d/1-A-I4g3u3lEO5P0YNTHxZ3N3Yy2MMYA-xnFlwIAi13k/edit?usp=sharing
+## Datasets
+- CANG: https://ucmerced.box.com/s/sfg0jnwxbcan409sfswjohdbzju9c64j
+- ITGI: https://ucmerced.box.com/s/e4n2pgg8mcdnibprfhc19gpzotgkp69m
 
-2. Datasets
-    - CAGE: https://ucmerced.box.com/s/sfg0jnwxbcan409sfswjohdbzju9c64j
-    - ITGI: https://ucmerced.box.com/s/e4n2pgg8mcdnibprfhc19gpzotgkp69m
+## Assigning
+Annotation task list: https://docs.google.com/spreadsheets/d/1-A-I4g3u3lEO5P0YNTHxZ3N3Yy2MMYA-xnFlwIAi13k/edit?usp=sharing
 
-3. Clean up bounding boxes `bbox.csv` from `raw` to `clean`. Use `visualize_bbox.py`
-4. Annotate sequence. One CSV file per video. Use `visualize_bbox.py`
+## Annotation Guide
 
+<!-- 1. Edit videos
+    1. `concat_videos` concatenates videos
+        1. With given 'search word' *(eg. "front")*
+        1. Automatic finds all 'search words'
+        1. Specific videos
+    1. `cut_video` cuts videos to new files -->
+
+<!-- 1. Extract pedestrian bboxes with `scripts/extract_person_video.py`. -->
+
+1. Use `main.py` to visualize the video and bounding box with frames.
+    - Input:
+        - `--main_folder_path` (str): Path to the main folder containing the videos and CSV files.
+            - *(e.g. `../conflict_acted_navigation_gestures`)*
+        - `--video_name` (str): Name of the video clip and camera name.
+            - *(e.g. `video_02/front`)*
+    - Controls:
+        - Space:        Play/Pause
+        - Up Arrow:     Increase playback
+        - Down Arrow:   Decrease playback
+        - Left Arrow:   Backward 10 frames
+        - Right Arrow:  Forward 10 frames
+        - 'h':          Toggle HUD
+        - 'q':          Quit
+
+1. Clean up `bbox.csv`, by remove additional bounding boxes and match ID's. Move from `raw` to `clean` when done.
+    - Note: Be aware when using '*find-replace*'-function (replaces frames too)!
+
+1. Annotate sequences for each pedestrian ID. One CSV file per video.
+    - `video_name, camera, pedestrian_id, start_frame, end_frame, gesture_class, ego_driver_mask, body_desc, gesture_desc`.
+    - The `gesture_class` is found in `config/gesture_classes`.
+    - See detailed description in PDF file, *4.2. Annotation Framework*.
+    
+<!-- 1. *Optional, `scripts/stretch_annotations.py` stretches frame-stamps to each frame, including bboxes.* -->
+
+## Dataset Structure
 ```
 project/
-├── videos/
 ├── info.csv
+├── videos/
+│   ├── video_00.mp4
+│   ├── video_01.mp4
+│   └── ...
 ├── raw/
 │   ├── bbox/
-│   │   └── `video_name, camera, frame_id, pedestrian_id, x1, y1, x2, y2`
+│   │   ├── video_00_front.csv
+│   │   ├── video_01_front.csv
+│   │   └── ...
 │   └── sequence/
-│       └── `video_name, camera, pedestrian_id, start_frame, end_frame, gesture_label_id, ego_driver_mask`
+│       ├── video_00_front.csv
+│       ├── video_01_front.csv
+│       └── ...
 └── clean/
     ├── bbox/
+    │   ├── video_00_front.csv
+    │   └── ...
     └── sequence/
+        ├── video_00_front.csv
+        └── ...
 ```
 
-## Edit videos
-- `concat_videos` concatenates videos
-    1. With given 'search word' *(eg. "front")*
-    2. Automatic finds all 'search words'
-    3. Specific videos
-- `cut_video` cuts videos to new files
-
-## Annotation
-1. Extract pedestrian bboxes with `scripts/extract_person_video.py`.
-2. Clean up additional bboxes and ensure ID's match with `visualize_bbox.py`.
-3. Construct gesture caption annotation for each pedestrian ID
-    - `video_name, start_frame, end_frame, pedestrian_id, gesture_class, body_caption, gesture_caption`.
-    - The gesture classes are found in `config/gesture_classes`.
-    - Note: DO NOT use find-replace (replaces frames too)
-4. *Optional, `scripts/stretch_annotations.py` stretches frame-stamps to each frame, including bboxes.*
-
-## Relocate frame
-`retrieve_frame` look ups the first and last frame, to relocate the original frame cut. It matches the each frame.
+<!-- ## Relocate frame
+`retrieve_frame` look ups the first and last frame, to relocate the original frame cut. It matches the each frame. -->
