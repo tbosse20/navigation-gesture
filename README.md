@@ -1,5 +1,5 @@
 # CANG-data annotation
-## Annotation Conflicting Authority Navigation Gestures (CANG)
+## Annotation Conflicting Authorities & Navigation Gestures (CANG)
 
 ## Datasets
 - CANG: https://ucmerced.box.com/s/sfg0jnwxbcan409sfswjohdbzju9c64j
