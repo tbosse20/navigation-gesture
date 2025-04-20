@@ -6,7 +6,8 @@
 - ITGI: https://ucmerced.box.com/s/e4n2pgg8mcdnibprfhc19gpzotgkp69m
 
 ## Assigning
-Annotation task list: https://docs.google.com/spreadsheets/d/1-A-I4g3u3lEO5P0YNTHxZ3N3Yy2MMYA-xnFlwIAi13k/edit?usp=sharing
+- Annotation task list: https://docs.google.com/spreadsheets/d/1-A-I4g3u3lEO5P0YNTHxZ3N3Yy2MMYA-xnFlwIAi13k/edit?usp=sharing
+- Deadline: 4th May 2025 11:59 PM
 
 ## Annotation Guide
 
