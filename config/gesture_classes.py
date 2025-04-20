@@ -1,14 +1,14 @@
 from enum import Enum
 
 class Colors(Enum):
-    """RGB color definitions."""
-    RED     = (255, 0, 0)
-    GREEN   = (0, 255, 0)
-    BLUE    = (0, 0, 255)
-    YELLOW  = (255, 255, 0)
-    PURPLE  = (128, 0, 128)
+    """BGR color definitions."""
+    RED     = (0,   0,   255)
+    GREEN   = (0,   255, 0)
+    BLUE    = (255, 0,   0)
+    YELLOW  = (0,   255, 255)
+    PURPLE  = (128, 0,   128)
     GREY    = (128, 128, 128)
-    AMBER   = (255, 153, 0)
+    AMBER   = (0,   153, 255)
 
     def __str__(self) -> str:
         return self.name.capitalize()
@@ -16,11 +16,10 @@ class Colors(Enum):
 
 class Gesture(Enum):
     """Navigation gesture types with associated color and icon."""
-    def __new__(cls, value: int, color: Colors, icon: str):
+    def __new__(cls, value: int, color: Colors):
         obj = object.__new__(cls)
         obj._value_ = value
         obj.color = color
-        obj.icon = icon
         return obj
 
     IDLE    = (0,  Colors.AMBER  )
@@ -50,5 +49,5 @@ class Gesture(Enum):
 # Usage example:
 if __name__ == "__main__":
     for gesture in Gesture:
-        print(f"{gesture}: value={gesture.value}, color={gesture.color.name}, icon={gesture.icon}")
+        print(f"{gesture}: value={gesture.value}, color={gesture.color.name}")
 

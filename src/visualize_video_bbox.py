@@ -182,6 +182,41 @@ def get_dfs(main_folder_path: str, video_name: str, csv_file: str = None) -> tup
             f"Error: No CSV files found for the video '{video_name}'. Please check the input folder."
         )
 
+    # Ensure bbox_df contains the required columns
+    required_columns = [
+        "video_name",
+        "camera",
+        "frame_id",
+        "pedestrian_id",
+        "x1",
+        "y1",
+        "x2",
+        "y2",
+    ]
+    for col in required_columns:
+        if col not in bbox_df.columns:
+            raise ValueError(
+                f"Error: Missing required column '{col}' in the bounding box DataFrame. (Ensure the correct file)."
+            )
+
+    # Ensure sequence_df contains the required columns
+    required_columns = [
+        "video_name",
+        "camera",
+        "pedestrian_id",
+        "start_frame",
+        "end_frame",
+        # "ego_driver_mask",
+        "gesture_label_id",
+        "body_desc",
+        "interpret_desc",
+    ]
+    for col in required_columns:
+        if col not in sequence_df.columns:
+            raise ValueError(
+                f"Error: Missing required column '{col}' in the sequence DataFrame. (Ensure the correct file)."
+            )
+
     return bbox_df, sequence_df
 
 
@@ -229,11 +264,7 @@ def draw_bbox(frame, x1, y1, x2, y2, pedestrian_id):
     FONT = cv2.FONT_HERSHEY_DUPLEX
     SIZE = 0.5
     WIDTH = 1
-
-    # Set the color and font for the bounding boxes
-    # random.seed(pedestrian_id)
-    # color = tuple(random.randint(0, 200) for _ in range(3))
-    color = (255, 153, 0)
+    color = (0, 255, 0)  # Standard color
 
     # Draw the bounding box on the frame
     cv2.rectangle(frame, (x1, y1), (x2, y2), color, WIDTH)
@@ -276,7 +307,10 @@ def draw_gesture_labels(frame, x1, y1, pedestrian_sequence):
         return frame
 
     # Labels we're interested in (only keep ones present)
-    LABEL_KEYS = {"gesture_label_id": "Gesture", "ego_driver_mask": "Ego Driver"}
+    LABEL_KEYS = {
+        "gesture_label_id": "Gesture",
+        # "ego_driver_mask": "Ego Driver"
+    }
     label_values = {
         value: pedestrian_sequence[key]
         for key, value in LABEL_KEYS.items()
@@ -290,15 +324,15 @@ def draw_gesture_labels(frame, x1, y1, pedestrian_sequence):
 
         # Generic label text and color
         label_text = f"{label_name}: {label_value}"
-        color = (0, 0, 255) if label_value == 0 else (0, 255, 0)
+        color = (0, 0, 255) if label_value == 0 else (0, 0, 255)
 
         # Specific label handling
         if label_name == "Gesture":
             label_text += f" ({Gesture(label_value).name})"
             color = (
-                Gesture(label_values["Gesture"]).color
+                Gesture(label_values["Gesture"]).color.value
                 if "Gesture" in label_values
-                else (255, 153, 0)
+                else (0, 0, 255)
             )
 
         # Set the position for the label text
@@ -336,8 +370,13 @@ def draw_bbox_duplicate_alert(frame, pedestrian_ids):
 def draw_pedestrians(frame, df_bbox, frame_id, df_sequence):
     """Draw pedestrians and their bounding boxes on the frame."""
 
-    # Get the pedestrian IDs for the current frame
-    pedestrian_ids = df_bbox[df_bbox["frame_id"] == frame_id]["pedestrian_id"]
+    # Get the current frame
+    current_frame = df_bbox[df_bbox["frame_id"] == frame_id]
+    if current_frame.empty:
+        return frame
+
+    # Get the pedestrian IDs
+    pedestrian_ids = current_frame["pedestrian_id"]
     if len(pedestrian_ids) == 0:
         return frame
 
@@ -370,7 +409,7 @@ def draw_info(frame, video_name, frame_id, interval):
     info = [
         f"Video: {video_name.split('_')[1]}",
         f"Frame: {frame_id}",
-        f"Speed: {int(30/interval)} FPS",
+        f"Speed: {int(64/interval)}",
     ]
     for i, text in enumerate(info):
         cv2.putText(
@@ -392,7 +431,8 @@ class Controller:
         # Set default values for the controller
         self.play = False
         self.frame_id = 0
-        self.speed = 1
+        self.speed = 8
+        self.max_speed = 64
         self.show_hud = True
 
         # Set the total number of frames
@@ -424,21 +464,25 @@ class Controller:
         # Control playback speed and frame navigation
         self.speed /= 2 if key == 2490368 else 1  # Up arrow
         self.speed *= 2 if key == 2621440 else 1  # Down arrow
-        self.speed = int(max(1, self.speed))  # Ensure interval is at least 1
+        self.speed = min(self.speed, self.max_speed)  # Limit max speed
+        self.speed = max(self.speed, 1)  # Limit min speed to 1
+        self.speed = int(self.speed)  # Convert to int for cv2.waitKeyEx
 
     def _update_frame_id(self, key):
         """Update the frame ID based on key presses."""
 
         self.frame_id += 1 if self.play else 0  # Play mode
-        
+
         # Control frame navigation
-        interval = 10
+        interval = self.max_speed / self.speed
         self.frame_id += interval if key == 2555904 else 0  # Right arrow
         self.frame_id -= interval if key == 2424832 else 0  # Left arrow
 
         # Keep frame_id within bounds by wrapping around
         self.frame_id = 0 if self.frame_id >= self.total_frames else self.frame_id
         self.frame_id = self.total_frames - 1 if self.frame_id < 0 else self.frame_id
+
+        return
 
 
 def _visualize_video(
@@ -461,29 +505,23 @@ def _visualize_video(
     total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
     # Initialize the controller
     controller = Controller(total_frames)
-    # Set previous frame ID
-    prev_frame_id = -1
 
     # Create a window to display the video
     while cap.isOpened():
 
         # Check if the video is playing or paused and read the frame
-        if abs(controller.frame_id - prev_frame_id) > controller.speed:
-            cap.set(cv2.CAP_PROP_POS_FRAMES, controller.frame_id)
-            
+        if not controller.play:
+            cap.set(cv2.CAP_PROP_POS_FRAMES, controller.frame_id - 1)
+
         ret, frame = cap.read()
         if not ret:
             break
-        
         controller.frame_id = int(cap.get(cv2.CAP_PROP_POS_FRAMES))
-        prev_frame_id = controller.frame_id
-        
+
         # Draw bounding boxes on the frame
         if controller.show_hud:
             frame = draw_pedestrians(frame, df_bbox, controller.frame_id, df_sequence)
-            frame = draw_info(
-                frame, video_name, controller.frame_id, controller.speed
-            )
+            frame = draw_info(frame, video_name, controller.frame_id, controller.speed)
 
         # Display the frame
         frame = cv2.resize(frame, (1280, 720))

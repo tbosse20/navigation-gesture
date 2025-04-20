@@ -18,7 +18,7 @@ Annotation task list: https://docs.google.com/spreadsheets/d/1-A-I4g3u3lEO5P0YNT
 
 <!-- 1. Extract pedestrian bboxes with `scripts/extract_person_video.py`. -->
 
-1. Use `main.py` to visualize the video and bounding box with frames.
+- Use `main.py` to visualize the video and bounding box with frames.
     - Input:
         - `--main_folder_path` (str): Path to the main folder containing the videos and CSV files.
             - *(e.g. `../conflict_acted_navigation_gestures`)*
@@ -33,11 +33,14 @@ Annotation task list: https://docs.google.com/spreadsheets/d/1-A-I4g3u3lEO5P0YNT
         - 'h':          Toggle HUD
         - 'q':          Quit
 
+- See `video_13_front' for example.
+
 1. Clean up `bbox.csv`, by remove additional bounding boxes and match ID's. Move from `raw` to `clean` when done.
     - Note: Be aware when using '*find-replace*'-function (replaces frames too)!
 
 1. Annotate sequences for each pedestrian ID. One CSV file per video.
-    - `video_name, camera, pedestrian_id, start_frame, end_frame, gesture_class, ego_driver_mask, body_desc, gesture_desc`.
+    - `video_name, camera, pedestrian_id, start_frame, end_frame, gesture_class, body_desc, gesture_desc`.
+    <!-- ego_driver_mask,  -->
     - The `gesture_class` is found in `config/gesture_classes`.
     - See detailed description in PDF file, *4.2. Annotation Framework*.
     
@@ -71,3 +74,6 @@ project/
 
 <!-- ## Relocate frame
 `retrieve_frame` look ups the first and last frame, to relocate the original frame cut. It matches the each frame. -->
+
+<!-- ## Future Work
+- Expand dataset to include none-direct gestures too. -->

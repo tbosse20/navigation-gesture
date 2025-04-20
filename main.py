@@ -66,7 +66,7 @@ if __name__ == "__main__":
 
     # Example usage:
     """ 
-    python visualize_bbox.py --main_folder "../data/conflict_acted_navigation_gestures" --video_name "video_00/front"
+    python main.py --main_folder "../data/conflict_acted_navigation_gestures" --video_name "video_00/front"
     """
 
     main(args.main_folder, args.video_name)
