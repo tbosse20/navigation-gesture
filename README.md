@@ -37,6 +37,8 @@
 
 - See `video_13_front' for example.
 
+- *Upload to this link, if editing of the Box isn't permitted: https://drive.google.com/drive/folders/1wCjvZFx-nsZkZc4NegPH5MZOhGuWQBdp?usp=sharing*
+
 1. Clean up `bbox.csv`, by remove additional bounding boxes and match ID's. Move from `raw` to `clean` when done.
     - Note: Be aware when using '*find-replace*'-function (replaces frames too)!
 
