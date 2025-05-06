@@ -218,7 +218,7 @@ def cut_with_csv(csv_file: str):
         )
         if output_file_path is None:
             continue
-
+        
         # Cut the video using the cut_video_time function
         cut_video_cluster(
             input_folder_path,
