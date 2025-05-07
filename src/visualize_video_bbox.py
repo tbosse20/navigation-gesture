@@ -407,7 +407,7 @@ def draw_info(frame, video_name, frame_id, interval):
     """Draw the video name, frame number, and interval on the frame."""
 
     info = [
-        f"Video: {video_name.split('_')[1]}",
+        f"Video: {video_name}",
         f"Frame: {frame_id}",
         f"Speed: {int(64/interval)}",
     ]
