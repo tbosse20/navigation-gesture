@@ -83,4 +83,4 @@ if __name__ == "__main__":
         --sequence_csv "path/to/sequence.csv"
     """
 
-    main(None, args.video_name, args.bbox_csv, args.sequence_csv)
+    main(args.video_name, args.bbox_csv, args.sequence_csv)
