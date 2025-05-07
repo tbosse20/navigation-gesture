@@ -11,6 +11,8 @@
 
 ## Annotation Guide
 
+1. `pip install -r requirements.txt`
+
 <!-- 1. Edit videos
     1. `concat_videos` concatenates videos
         1. With given 'search word' *(eg. "front")*
@@ -22,10 +24,10 @@
 
 - Use `main.py` to visualize the video and bounding box with frames.
     - Input:
-        - `--main_folder_path` (str): Path to the main folder containing the videos and CSV files.
-            - *(e.g. `../conflict_acted_navigation_gestures`)*
-        - `--video_name` (str): Name of the video clip and camera name.
-            - *(e.g. `video_02/front`)*
+        - `--video_path` (str): Path to the video file.
+        - `--bbox_csv` (str): Path to the bbox csv file.
+        - `--sequence_csv`(str): Path to the sequence csv file. (*Count 'commas' if it doesn't appear*)
+        
     - Controls:
         - Space:        Play/Pause
         - Up Arrow:     Increase playback

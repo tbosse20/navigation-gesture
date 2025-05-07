@@ -13,8 +13,9 @@ def split_clip_name(video_name: str) -> tuple:
 
     # Split the video name by "/"
     clip_split = video_name.split("/")
+    
     # Get the clip name and camera name
-    clip_name = clip_split[0] if len(clip_split) > 0 else None
+    clip_name   = clip_split[0] if len(clip_split) > 0 else None
     camera_name = clip_split[1] if len(clip_split) > 1 else None
 
     return clip_name, camera_name
@@ -275,22 +276,21 @@ def draw_bbox(frame, x1, y1, x2, y2, pedestrian_id):
     return frame
 
 
-def get_pedestrian_label_sequence(df_sequence, frame_id, pedestrian_id):
+def get_pedestrian_label_sequence(frame_sequence, pedestrian_id):
     """Get the pedestrian label sequence from the DataFrame."""
 
     # Filter the DataFrame for the current pedestrian ID
-    if df_sequence is None:
+    if frame_sequence is None or frame_sequence.empty:
         return None
 
     # Filter for the current pedestrian and frame
-    df_sequence = df_sequence[
-        (df_sequence["pedestrian_id"] == pedestrian_id)
-        & (df_sequence["start_frame"] <= frame_id)
-        & (df_sequence["end_frame"] >= frame_id)
-    ]
+    frame_sequence = frame_sequence[frame_sequence["pedestrian_id"] == pedestrian_id]
+    if frame_sequence.empty:
+        return None
 
     # Get the first relevant label row
-    pedestrian_sequence = df_sequence.iloc[0] if not df_sequence.empty else None
+    pedestrian_sequence = frame_sequence.iloc[0] if not frame_sequence.empty else None
+    
     return pedestrian_sequence
 
 
@@ -303,7 +303,7 @@ def draw_gesture_labels(frame, x1, y1, pedestrian_sequence):
     WIDTH = 1
 
     # Check if the pedestrian sequence is None
-    if pedestrian_sequence is None:
+    if pedestrian_sequence is None or pedestrian_sequence.empty:
         return frame
 
     # Labels we're interested in (only keep ones present)
@@ -321,7 +321,7 @@ def draw_gesture_labels(frame, x1, y1, pedestrian_sequence):
     for idx, (label_name, label_value) in enumerate(label_values.items()):
         if pd.isna(label_value):  # skip NaN values
             continue
-
+        
         # Generic label text and color
         label_text = f"{label_name}: {label_value}"
         color = (0, 0, 255) if label_value == 0 else (0, 0, 255)
@@ -374,11 +374,16 @@ def draw_pedestrians(frame, df_bbox, frame_id, df_sequence):
     current_frame = df_bbox[df_bbox["frame_id"] == frame_id]
     if current_frame.empty:
         return frame
-
+    
     # Get the pedestrian IDs
     pedestrian_ids = current_frame["pedestrian_id"]
-    if len(pedestrian_ids) == 0:
+    if pedestrian_ids.empty:
         return frame
+    
+    frame_sequence = df_sequence[
+        (df_sequence["start_frame"] <= frame_id) &
+        (df_sequence["end_frame"] >= frame_id)
+    ] if not df_sequence.empty else pd.DataFrame()
 
     for i, pedestrian_id in enumerate(pedestrian_ids):
 
@@ -396,7 +401,7 @@ def draw_pedestrians(frame, df_bbox, frame_id, df_sequence):
 
         # Get and draw gesture labels
         pedestrian_sequence = get_pedestrian_label_sequence(
-            df_sequence, frame_id, pedestrian_id
+            frame_sequence, pedestrian_id
         )
         draw_gesture_labels(frame, x1, y1, pedestrian_sequence)
 
@@ -485,7 +490,7 @@ class Controller:
         return
 
 
-def _visualize_video(
+def visualize_video(
     video_path: str,
     df_bbox: pd.DataFrame,
     df_sequence: pd.DataFrame,
