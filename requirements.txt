@@ -1,6 +1,6 @@
 pandas
 tqdm
-ultralytics
 opencv-python
 numpy
-torch
+# ultralytics
+# torch

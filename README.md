@@ -11,7 +11,9 @@
 
 ## Annotation Guide
 
-1. `pip install -r requirements.txt`
+1. Download your assigned files from the Box. The structure doesn't matter. You'll have to specify the locations anyways.
+
+1. Download libraries `pip install -r requirements.txt`.
 
 <!-- 1. Edit videos
     1. `concat_videos` concatenates videos
@@ -29,13 +31,11 @@
         - `--sequence_csv`(str): Path to the sequence csv file. (*Count 'commas' if it doesn't appear*)
         
     - Controls:
-        - Space:        Play/Pause
-        - Up Arrow:     Increase playback
-        - Down Arrow:   Decrease playback
-        - Left Arrow:   Backward 10 frames
-        - Right Arrow:  Forward 10 frames
-        - 'h':          Toggle HUD
-        - 'q':          Quit
+        - Space:            Play/Pause
+        - Up/down Arrow:    Increase/Decrease playback speed
+        - Left/right Arrow: Backward/forward X frames (depends on speed)
+        - 'h':              Toggle HUD
+        - 'q':              Quit
 
 - See `video_13_front' for example.
 
@@ -44,7 +44,7 @@
 1. Clean up `bbox.csv`, by remove additional bounding boxes and match ID's. Move from `raw` to `clean` when done.
     - Note: Be aware when using '*find-replace*'-function (replaces frames too)!
 
-1. Annotate sequences for each pedestrian ID. One CSV file per video.
+1. Make your own `sequence.csv` file. Annotate sequences for each pedestrian ID, but only gesture directed to the ego driver! One CSV file per video.
     - `video_name, camera, pedestrian_id, start_frame, end_frame, gesture_class, body_desc, gesture_desc`.
     <!-- ego_driver_mask,  -->
     - The `gesture_class` is found in `config/gesture_classes`.
@@ -52,7 +52,7 @@
     
 <!-- 1. *Optional, `scripts/stretch_annotations.py` stretches frame-stamps to each frame, including bboxes.* -->
 
-## Dataset Structure
+## Online Dataset Structure
 ```
 project/
 ├── info.csv
