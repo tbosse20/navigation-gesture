@@ -467,8 +467,8 @@ class Controller:
     def _interval_control(self, key):
         """Control the interval for frame navigation."""
         # Control playback speed and frame navigation
-        self.speed /= 2 if key == 2490368 else 1  # Up arrow
-        self.speed *= 2 if key == 2621440 else 1  # Down arrow
+        self.speed /= 2 if key in (2490368, ord('w')) else 1  # Up arrow or 'w' key
+        self.speed *= 2 if key in (2621440, ord('s')) else 1  # Down arrow or 's' key
         self.speed = min(self.speed, self.max_speed)  # Limit max speed
         self.speed = max(self.speed, 1)  # Limit min speed to 1
         self.speed = int(self.speed)  # Convert to int for cv2.waitKeyEx
@@ -480,8 +480,8 @@ class Controller:
 
         # Control frame navigation
         interval = self.max_speed / self.speed
-        self.frame_id += interval if key == 2555904 else 0  # Right arrow
-        self.frame_id -= interval if key == 2424832 else 0  # Left arrow
+        self.frame_id -= interval if key in (2424832, ord('a')) else 0  # Left arrow or 'a' key
+        self.frame_id += interval if key in (2555904, ord('d')) else 0  # Right arrow or 'd' key
 
         # Keep frame_id within bounds by wrapping around
         self.frame_id = 0 if self.frame_id >= self.total_frames else self.frame_id
