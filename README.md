@@ -31,11 +31,11 @@
         - `--sequence_csv`(str): Path to the sequence csv file. (*Count 'commas' if it doesn't appear*)
         
     - Controls:
-        - Space:            Play/Pause
-        - Up/down Arrow:    Increase/Decrease playback speed
-        - Left/right Arrow: Backward/forward X frames (depends on speed)
-        - 'h':              Toggle HUD
-        - 'q':              Quit
+        - Space:                           Play/Pause
+        - Up/down Arrow or 'w'/'s' key:    Increase/Decrease playback speed
+        - Left/right Arrow or 'a'/'d' key: Backward/forward X frames (depends on speed)
+        - 'h' key:                         Toggle HUD
+        - 'q' key:                         Quit
 
 - See `video_13_front' for example.
 
