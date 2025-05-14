@@ -383,7 +383,7 @@ def draw_pedestrians(frame, df_bbox, frame_id, df_sequence):
     frame_sequence = df_sequence[
         (df_sequence["start_frame"] <= frame_id) &
         (df_sequence["end_frame"] >= frame_id)
-    ] if not df_sequence.empty else pd.DataFrame()
+    ] if df_sequence and not df_sequence.empty else pd.DataFrame()
 
     for i, pedestrian_id in enumerate(pedestrian_ids):
 
