@@ -49,13 +49,7 @@
     <!-- ego_driver_mask,  -->
     - The `gesture_class` is found in `config/gesture_classes`.
     - See detailed description in PDF file, *4.2. Annotation Framework*.
-    - Authority IDs:
-        0. Officer Blue,
-        1. Firefighter
-        2. Civilian
-        3. Safety vest
-        4. Unlisted
-        5. Unclear
+    - Authority IDs: 0. Officer, 1. Firefighter, 2. Civilian, 3. Safety vest, 4. Unlisted, 5. Unclear
     
 <!-- 1. *Optional, `scripts/stretch_annotations.py` stretches frame-stamps to each frame, including bboxes.* -->
 
