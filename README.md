@@ -7,7 +7,6 @@
 
 ## Assigning
 - Annotation task list: https://docs.google.com/spreadsheets/d/1-A-I4g3u3lEO5P0YNTHxZ3N3Yy2MMYA-xnFlwIAi13k/edit?usp=sharing
-- Deadline: 4th May 2025 11:59 PM
 
 ## Annotation Guide
 
@@ -37,7 +36,7 @@
         - 'h' key:                         Toggle HUD
         - 'q' key:                         Quit
 
-- See `video_13_front' for example.
+- See ITGI `video_13_front' for example.
 
 - *Upload to this link, if editing of the Box isn't permitted: https://drive.google.com/drive/folders/1wCjvZFx-nsZkZc4NegPH5MZOhGuWQBdp?usp=sharing*
 
